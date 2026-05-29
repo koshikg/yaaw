@@ -1,0 +1,21 @@
+
+.vscode/settings.json
+
+# Dependencies
+node_modules/
+
+# Test outputs
+testing/test-results/
+testing/demo-repo/
+playwright-report/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.last-update

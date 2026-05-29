@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAAW</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/media/yaaw-icon.svg">
+    <link rel="apple-touch-icon" href="./assets/media/yaaw-icon.png">
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f7;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --text-tertiary: #86868b;
+            --accent-blue: #0071e3;
+            --accent-hover: #0077ed;
+            --border-light: #d2d2d7;
+            --success: #32d74b;
+            --warning: #ff9f0a;
+            --danger: #ff453a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(180deg, #ffffff 0%, #f5f5f7 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        html {
+            scrollbar-width: thin;
+            scrollbar-color: #bcc7d4 transparent;
+        }
+
+        html::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        html::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #d3dbe5 0%, #bcc7d4 100%);
+            border-radius: 999px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        html::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0.8rem 1.5rem 1rem;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .hero h1 {
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            letter-spacing: -0.03em;
+            margin-bottom: 0.3rem;
+        }
+
+        .hero-brand {
+            width: 68px;
+            height: 68px;
+            display: block;
+            margin: 0 auto 0.5rem;
+            filter: drop-shadow(0 4px 10px rgba(0, 113, 227, 0.2));
+        }
+
+        .hero p {
+            color: var(--text-secondary);
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
+        }
+
+        .hero-actions {
+            margin-top: 0;
+            display: none;
+        }
+
+        .back-link {
+            display: inline-block;
+            padding: 0.55rem 0.95rem;
+            border-radius: 999px;
+            border: 1px solid var(--border-light);
+            text-decoration: none;
+            color: var(--accent-blue);
+            background: #fff;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .back-link:hover {
+            border-color: var(--accent-blue);
+            background: var(--bg-secondary);
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 1.5rem;
+            right: 2rem;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: saturate(180%) blur(20px);
+            border: 1px solid var(--border-light);
+            color: var(--accent-blue);
+            padding: 0.6rem 1rem;
+            border-radius: 20px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            z-index: 999;
+            transition: all 0.2s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .tabs {
+            display: inline-flex;
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: saturate(180%) blur(14px);
+            border: 1px solid var(--border-light);
+            border-radius: 999px;
+            padding: 0.3rem;
+            margin: 0 auto;
+            gap: 0.3rem;
+        }
+
+        .tabs-wrap {
+            text-align: center;
+            margin-bottom: 0.6rem;
+        }
+
+        .tab-btn {
+            border: 0;
+            border-radius: 999px;
+            padding: 0.65rem 1.2rem;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-blue);
+            color: #fff;
+        }
+
+        .panel {
+            display: none;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--border-light);
+            border-radius: 20px;
+            padding: 0.8rem;
+            backdrop-filter: saturate(180%) blur(16px);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.06);
+            overflow: visible;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .search-wrap {
+            margin-bottom: 0.6rem;
+            position: sticky;
+            top: 0.5rem;
+            z-index: 3;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 12px;
+            padding: 0.3rem;
+        }
+
+        .search {
+            width: 100%;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+            background: #fff;
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .search:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.12);
+        }
+
+        .meta {
+            color: var(--text-tertiary);
+            margin: 0.25rem 0 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.9rem;
+        }
+
+        .skill-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .group-heading {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-tertiary);
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 0.3rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .card {
+            border: 1px solid rgba(0, 113, 227, 0.22);
+            border-radius: 14px;
+            background: linear-gradient(135deg, #ffffff 0%, rgba(0, 113, 227, 0.03) 100%);
+            padding: 0.8rem 0.85rem;
+            text-align: left;
+            transition: all 0.25s ease;
+            width: 100%;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(0, 113, 227, 0.14);
+            border-color: var(--accent-blue);
+            background: linear-gradient(135deg, #ffffff 0%, rgba(0, 113, 227, 0.1) 100%);
+        }
+
+        .card {
+            cursor: pointer;
+        }
+
+        .card h3 {
+            font-size: 1rem;
+            margin-bottom: 0.35rem;
+            color: var(--text-primary);
+        }
+
+        .card-summary {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-detail {
+            display: none;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .card.expanded .card-detail {
+            display: block;
+        }
+
+        .card-detail p {
+            color: var(--text-secondary);
+            font-size: 0.84rem;
+            line-height: 1.7;
+            margin-bottom: 0.4rem;
+        }
+
+        .card-detail .usage-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-tertiary);
+            margin-top: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .card-detail .usage-example {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 0.4rem 0.6rem;
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .filter-btn {
+            border: 1px solid var(--border-light);
+            border-radius: 999px;
+            padding: 0.35rem 0.75rem;
+            background: #fff;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.82rem;
+            transition: all 0.2s ease;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+
+        .filter-btn.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #fff;
+        }
+
+        .tag {
+            display: inline-block;
+            font-size: 0.78rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 999px;
+            padding: 0.2rem 0.55rem;
+            margin-right: 0.35rem;
+            margin-bottom: 0.35rem;
+            color: var(--text-secondary);
+        }
+
+        .cmd {
+            display: inline-block;
+            margin-top: 0.35rem;
+            background: #1d1d1f;
+            color: #f5f5f7;
+            border-radius: 8px;
+            padding: 0.28rem 0.55rem;
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 0.78rem;
+        }
+
+        .flow {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.7rem;
+            margin-bottom: 1rem;
+            padding: 0.85rem;
+            background: linear-gradient(135deg, rgba(0, 113, 227, 0.03) 0%, rgba(50, 215, 75, 0.02) 100%);
+            border-radius: 16px;
+            border: 1px solid rgba(0, 113, 227, 0.1);
+        }
+
+        .step {
+            border: 1px solid rgba(0, 113, 227, 0.3);
+            border-radius: 14px;
+            background: linear-gradient(135deg, #ffffff 0%, rgba(0, 113, 227, 0.03) 100%);
+            padding: 0.7rem 0.6rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 113, 227, 0.06);
+            cursor: pointer;
+            font: inherit;
+            color: inherit;
+            width: 100%;
+        }
+
+        .step:hover,
+        .step:focus-visible,
+        .step.active {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(0, 113, 227, 0.16);
+            border-color: var(--accent-blue);
+            background: linear-gradient(135deg, #ffffff 0%, rgba(0, 113, 227, 0.1) 100%);
+        }
+
+        .step:focus-visible {
+            outline: none;
+        }
+
+        .step.active b {
+            color: #0056ad;
+        }
+
+        .step b {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 0.2rem;
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        .step span {
+            color: var(--text-secondary);
+            font-size: 0.7rem;
+            display: block;
+        }
+
+        .process-detail {
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            background: #fff;
+            padding: 1.1rem 1.2rem;
+            min-height: 120px;
+        }
+
+        .process-detail h4 {
+            margin-bottom: 0.4rem;
+            font-size: 1.05rem;
+        }
+
+        .process-detail .detail-desc {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.65;
+            margin-bottom: 0.7rem;
+        }
+
+        .process-detail .detail-skill {
+            display: inline-block;
+            background: #1d1d1f;
+            color: #f5f5f7;
+            border-radius: 8px;
+            padding: 0.2rem 0.5rem;
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 0.78rem;
+            margin-bottom: 0.7rem;
+        }
+
+        .process-detail .detail-section {
+            margin-bottom: 0.6rem;
+        }
+
+        .process-detail .detail-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-tertiary);
+            margin-bottom: 0.25rem;
+        }
+
+        .process-detail ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .process-detail li {
+            color: var(--text-secondary);
+            font-size: 0.84rem;
+            line-height: 1.6;
+            padding-left: 0.9rem;
+            position: relative;
+            margin-bottom: 0.2rem;
+        }
+
+        .process-detail li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.55em;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--border-light);
+        }
+
+        .process-detail .context-item {
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 0.78rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 0.2rem 0.45rem;
+            display: inline-block;
+            margin: 0.15rem 0.25rem 0.15rem 0;
+        }
+
+        .process-detail .model-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-bottom: 0.45rem;
+        }
+
+        .process-detail .model-tag {
+            position: relative;
+            display: inline-block;
+            background: #1d1d1f;
+            color: #f5f5f7;
+            border-radius: 8px;
+            padding: 0.2rem 0.5rem;
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 0.78rem;
+            border: 1px solid #1d1d1f;
+            cursor: default;
+        }
+
+        .process-detail .model-tag.primary {
+            background: #0c5fb5;
+            border-color: #0c5fb5;
+        }
+
+        .process-detail .model-tag[data-tip]::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: #2c2c2e;
+            color: #f5f5f7;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 0.71rem;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            border: 1px solid #3a3a3c;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            z-index: 10;
+            max-width: 280px;
+            line-height: 1.35;
+        }
+
+        .process-detail .model-tag[data-tip]:hover::after {
+            opacity: 1;
+        }
+
+        .process-helper {
+            font-size: 0.8rem;
+            color: var(--text-tertiary);
+            margin-bottom: 0.65rem;
+        }
+
+        .gate {
+            margin-top: 0.45rem;
+            display: inline-block;
+            font-size: 0.78rem;
+            border-radius: 999px;
+            padding: 0.2rem 0.55rem;
+            color: #fff;
+        }
+
+        .gate.warn { background: var(--warning); }
+        .gate.ok { background: var(--success); color: #10210d; }
+        .gate.block { background: var(--danger); }
+
+        .empty {
+            text-align: center;
+            color: var(--text-tertiary);
+            padding: 1rem;
+            border: 1px dashed var(--border-light);
+            border-radius: 12px;
+            background: #fff;
+        }
+
+        @media (max-width: 980px) {
+            .skills-grid { grid-template-columns: 1fr; }
+            .flow {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 0.8rem;
+                padding: 0.8rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .flow {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.8rem;
+                padding: 0.8rem;
+            }
+            .container { padding: 1.1rem 0.8rem 2rem; }
+            .panel { padding: 0.8rem; }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 3.35rem 0.9rem 5.25rem;
+            }
+
+            .hero-brand {
+                width: 56px;
+                height: 56px;
+            }
+
+            .tabs-wrap {
+                margin-bottom: 0.8rem;
+            }
+
+            .tabs {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .tab-btn {
+                flex: 1;
+                text-align: center;
+                padding: 0.6rem 0.7rem;
+                font-size: 0.86rem;
+            }
+
+            .back-btn {
+                top: calc(env(safe-area-inset-top, 0px) + 0.55rem);
+                right: 0.6rem;
+                padding: 0.45rem 0.72rem;
+                font-size: 0.78rem;
+            }
+
+            #install-footer {
+                right: 0.65rem;
+                bottom: calc(env(safe-area-inset-bottom, 0px) + 0.65rem);
+            }
+
+            #install-footer button {
+                padding: 0.48rem 0.72rem;
+                font-size: 0.76rem;
+            }
+
+            .process-detail {
+                padding: 0.9rem;
+            }
+
+            .process-detail .model-tag[data-tip]::after {
+                display: none;
+            }
+        }
+
+        #install-footer {
+            position: fixed;
+            bottom: 2.5rem;
+            right: 2rem;
+            z-index: 1001;
+        }
+
+        #install-footer button {
+            background: #1d1d1f;
+            color: #fff;
+            border: none;
+            padding: 0.6rem 1.1rem;
+            border-radius: 980px;
+            font-size: 0.84rem;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', Arial, sans-serif;
+            transition: all 0.2s cubic-bezier(0.28, 0.11, 0.32, 1);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        #install-footer button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        #install-footer button.copied {
+            background: #0071e3;
+        }
+    </style>
+</head>
+<body>
+    <a class="back-btn" href="./yaaw-overview.html" title="Back to Overview">← Overview</a>
+    <main class="container">
+        <section class="hero">
+            <img class="hero-brand" src="./assets/media/yaaw-mark.svg" alt="YAAW brand icon" />
+            <h1>YAAW</h1>
+            <p>Explore workflow stages and skills before you execute work.</p>
+            <div class="hero-actions"></div>
+        </section>
+
+        <div class="tabs-wrap">
+            <div class="tabs" role="tablist" aria-label="Browser sections">
+                <button class="tab-btn active" id="process-tab" data-target="process-panel" role="tab" aria-controls="process-panel" aria-selected="true">Workflow</button>
+                <button class="tab-btn" id="skills-tab" data-target="skills-panel" role="tab" aria-controls="skills-panel" aria-selected="false">Skills</button>
+            </div>
+        </div>
+
+        <section id="process-panel" class="panel active" role="tabpanel" aria-labelledby="process-tab">
+            <p class="process-helper">Hover a stage to preview details. Click to pin a stage on touch devices.</p>
+            <div id="process-flow" class="flow" aria-label="High-level workflow flow"></div>
+            <p id="process-count" class="meta"></p>
+            <article id="process-detail" class="process-detail"></article>
+        </section>
+
+        <section id="skills-panel" class="panel" role="tabpanel" aria-labelledby="skills-tab">
+            <div class="search-wrap">
+                <input id="skill-search" class="search" type="text" placeholder="Search by skill name, command, or what it does..." />
+            </div>
+            <div id="filter-bar" class="filter-bar"></div>
+            <p id="skill-count" class="meta"></p>
+            <div id="skills-grid"></div>
+        </section>
+    </main>
+
+    <div id="install-footer">
+        <button onclick="copyInstall()" title="Paste in PowerShell">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 0 1 2 9.5v-7A1.5 1.5 0 0 1 3.5 1h7A1.5 1.5 0 0 1 12 2.5V5"/></svg>
+            Setup Script
+        </button>
+    </div>
+
+    <script src="data/skills.generated.js"></script>
+    <script>
+        const skills = Array.isArray(globalThis.yaawSkillsData) ? globalThis.yaawSkillsData : [];
+
+        const processes = [
+            {
+                step: 'Discover',
+                skill: 'yaaw-discover',
+                output: 'Dependency map, hotspots, unknowns',
+                session: 'Fresh session required. Stop after findings and handoff are written.',
+                model: 'Primary: GPT-5.5. Alternatives: Claude Opus 4.6, Gemini 2.5 Pro, Gemini 3.1 Pro.',
+                models: [
+                    { name: 'GPT-5.5', primary: true, reason: '• Highest reasoning capability\n• Best at multi-hop synthesis\n• Dependency graph analysis' },
+                    { name: 'Claude Opus 4.6', reason: '• Strong long-context reasoning\n• Complex codebase analysis\n• Good GPT-5.5 alternative' },
+                    { name: 'Gemini 2.5 Pro', reason: '• Very large context window\n• Ingest entire repos in one pass' },
+                    { name: 'Gemini 3.1 Pro', reason: '• Multimodal reasoning\n• Architecture diagrams / visuals' }
+                ],
+                gate: 'No hidden assumptions',
+                level: 'warn',
+                details: 'Investigate the codebase before changing anything. Map dependencies, trace behavior, audit packages, analyze build pipelines, and identify unknowns.',
+                rules: [
+                    'Any new finding not already in learnings must update context/learnings/',
+                    'Discovery outputs ONLY to context/discovery/ and context/learnings/ — no implementation artifacts',
+                    'If the request spans discovery + implementation, complete discovery first, then route to Plan',
+                    'Human approval required before closing discovery'
+                ],
+                context: [
+                    'context/discovery/NN-topic/findings.md',
+                    'context/learnings/ (if new knowledge found)',
+                    'context/learnings/_index.yaml (updated after every new learning)'
+                ]
+            },
+            {
+                step: 'Plan',
+                skill: 'yaaw-plan',
+                output: 'PRD + implementation units',
+                session: 'Fresh session required. Read discovery outputs only, then stop after plan approval handoff.',
+                model: 'Primary: GPT-5.5. Alternatives: Claude Opus 4.6, Claude Opus 4.5, Gemini 2.5 Pro, Gemini 3.1 Pro.',
+                models: [
+                    { name: 'GPT-5.5', primary: true, reason: '• Structured logical decomposition\n• Constraint & edge-case reasoning\n• PRD construction' },
+                    { name: 'Claude Opus 4.6', reason: '• Requirements analysis\n• Structured document generation\n• Consistent formatting' },
+                    { name: 'Claude Opus 4.5', reason: '• Same Opus quality\n• Lower cost (3x)\n• Reliable fallback' },
+                    { name: 'Gemini 2.5 Pro', reason: '• Long-form structured output\n• Multi-section document coherence' },
+                    { name: 'Gemini 3.1 Pro', reason: '• Decompose implementation units\n• Sequence dependencies\n• Structured reasoning' }
+                ],
+                gate: 'Human approval required',
+                level: 'block',
+                details: 'Produce a structured PRD (Plan/Requirements Document) with clear objectives, implementation units, references to prior learnings, and measurable success criteria. Uses yaaw-grillme to interview the user until shared understanding is reached.',
+                rules: [
+                    'Use yaaw-grillme to elicit requirements (one question at a time)',
+                    'PRD must have mandatory References section linking to context/learnings/',
+                    'PRD must have clear Objective and Success Criteria sections',
+                    'User must explicitly approve the PRD before work can begin',
+                    'Agent presents completed PRD and asks: "Do you approve this plan?"'
+                ],
+                context: [
+                    'context/plans/NN-type-name/plan.md (the PRD)',
+                    'Reads: context/learnings/ for implementation guidance',
+                    'Reads: context/discovery/ for system understanding'
+                ]
+            },
+            {
+                step: 'Work',
+                skill: 'yaaw-work',
+                output: 'Small coded units with tests',
+                session: 'Fresh session required to start work. Later fresh sessions may resume from context/work logs.',
+                model: 'Primary: GPT-5.3-Codex. Alternatives: GPT-5.2-Codex, GPT-5.4, Claude Sonnet 4.6.',
+                models: [
+                    { name: 'GPT-5.3-Codex', primary: true, reason: '• Purpose-built code generation\n• Optimised for TDD patterns\n• Lower cost than reasoning models' },
+                    { name: 'GPT-5.2-Codex', reason: '• Lighter Codex variant\n• Good for routine edits\n• Solid fallback' },
+                    { name: 'GPT-5.4', reason: '• Balanced general model (1x cost)\n• Code + explanation blend\n• When Codex unavailable' },
+                    { name: 'Claude Sonnet 4.6', reason: '• Fast capable code model\n• Strong for complex refactors\n• Clear reasoning in responses' }
+                ],
+                gate: 'TDD + build verification',
+                level: 'warn',
+                details: 'Execute the approved PRD unit by unit. TDD is non-negotiable — write failing tests first, then implement. Must be on a valid feature branch before touching any code. Small commits only, each testable in isolation.',
+                rules: [
+                    'TDD: write/identify tests BEFORE implementation code — no exceptions',
+                    'Must be on a valid branch (not main/develop/release/*) before modifying code',
+                    'Branch naming: feature|bugfix|hotfix/<ID>-<description>',
+                    'Follow PRD implementation units in dependency order',
+                    'Run yaaw-build after each unit (not at the end)',
+                    'Human approval required before every commit',
+                    'Any unexpected finding captured to context/learnings/ immediately'
+                ],
+                context: [
+                    'context/work/NN-work-title/session.md',
+                    'context/work/NN-work-title/yaaw-work-log.md',
+                    'context/learnings/ (if new knowledge found during implementation)',
+                    'Code changes committed to feature branch'
+                ]
+            },
+            {
+                step: 'Review',
+                skill: 'yaaw-review',
+                output: 'Agent self-review + human check',
+                session: 'Fresh session required. Load plan, diff, work summary, and build evidence only.',
+                model: 'Primary: Claude Opus 4.6. Alternatives: GPT-5.5, Claude Opus 4.5, Gemini 2.5 Pro.',
+                models: [
+                    { name: 'Claude Opus 4.6', primary: true, reason: '• Methodical & patient analysis\n• Catches subtle security issues\n• Better than speed-optimised models' },
+                    { name: 'GPT-5.5', reason: '• Deep multi-hop reasoning\n• Complex security analysis\n• Invariant checking' },
+                    { name: 'Claude Opus 4.5', reason: '• Same Opus thoroughness\n• Lower cost option\n• Narrower review scope' },
+                    { name: 'Gemini 2.5 Pro', reason: '• Ingest full diff in one pass\n• Large context window' }
+                ],
+                gate: 'No critical findings',
+                level: 'warn',
+                details: 'Self-review code changes before pushing. Focuses on auth, data mutations, injection risks, test coverage, project-specific gotchas, and completeness. Presents a review summary and waits for human approval.',
+                rules: [
+                    'Build verification gate must have passed before review',
+                    'Agent presents review summary to user',
+                    'User must approve before commit/push ("push it", "looks good")',
+                    'Focuses on project-specific risks easy to miss during implementation'
+                ],
+                context: [
+                    'Review findings inform commit decision',
+                    'Critical findings block progression'
+                ]
+            },
+            {
+                step: 'Commit',
+                skill: 'yaaw-commit',
+                output: 'Branch name + conventional commit',
+                session: 'Fresh minimal session required. Load only commit readiness evidence.',
+                model: 'Primary: GPT-5.3-Codex. Alternatives: GPT-5.4, Claude Sonnet 4.6, Claude Sonnet 4.5.',
+                models: [
+                    { name: 'GPT-5.3-Codex', primary: true, reason: '• Code-adjacent structured task\n• No heavy reasoning needed\n• Cost-efficient gate check' },
+                    { name: 'GPT-5.4', reason: '• Reliable validation model\n• Good cost/capability balance\n• Simple formatting task' },
+                    { name: 'Claude Sonnet 4.6', reason: '• Clear conventional commits\n• Fast response time\n• Lightweight session fit' },
+                    { name: 'Claude Sonnet 4.5', reason: '• Budget option (1x cost)\n• Commit formatting is simple\n• Sufficient capability' }
+                ],
+                gate: 'All gates satisfied',
+                level: 'ok',
+                details: 'Create a conventional commit with proper context and traceability. All prior gates must be proven satisfied — work complete, build passing, TDD followed, review approved, and user gives explicit go-ahead.',
+                rules: [
+                    'ALL prerequisites must be proven: work done, build passes, tests pass (TDD), review approved',
+                    'User must explicitly say "commit it" or "go ahead"',
+                    'No big-bang commits — small, focused, testable commits only',
+                    'If ANY prerequisite is missing, refuse and tell user what is still needed',
+                    'In yaaw-skills repo: CHANGELOG.md must be updated under [Unreleased]'
+                ],
+                context: [
+                    'context/_session.md updated at phase transition',
+                    'context/learnings/_index.yaml updated if new knowledge captured',
+                    'Commit message follows conventional format'
+                ]
+            }
+        ];
+
+        const skillsGrid = document.getElementById('skills-grid');
+        const filterBar = document.getElementById('filter-bar');
+        const processFlow = document.getElementById('process-flow');
+        const processDetail = document.getElementById('process-detail');
+        const skillSearch = document.getElementById('skill-search');
+        const skillCount = document.getElementById('skill-count');
+        const processCount = document.getElementById('process-count');
+        let pinnedProcessIndex = 0;
+        let hoverProcessIndex = null;
+        let activeFilter = null;
+
+        function getGroups() {
+            const groupSet = new Set();
+            skills.forEach((item) => groupSet.add(item.group || 'Other'));
+            return Array.from(groupSet);
+        }
+
+        function renderFilterBar() {
+            const groups = getGroups();
+            filterBar.innerHTML = `<button class="filter-btn active" data-group="">All</button>` +
+                groups.map((g) => `<button class="filter-btn" data-group="${g}">${g}</button>`).join('');
+
+            filterBar.querySelectorAll('.filter-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    filterBar.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    activeFilter = btn.dataset.group || null;
+                    renderSkills(skillSearch.value);
+                });
+            });
+        }
+
+        function renderSkills(query = '') {
+            const q = query.trim().toLowerCase();
+            const filtered = skills.filter((item) => {
+                const matchesSearch = [item.name, item.command, item.group, item.description].join(' ').toLowerCase().includes(q);
+                const matchesFilter = !activeFilter || (item.group || 'Other') === activeFilter;
+                return matchesSearch && matchesFilter;
+            });
+
+            skillCount.textContent = `${filtered.length} of ${skills.length} skills`;
+            if (!skills.length) {
+                skillsGrid.innerHTML = '<div class="empty">Skills data is unavailable. Run `npm run skills:sync` to regenerate from dist/skills.</div>';
+                return;
+            }
+            if (!filtered.length) {
+                skillsGrid.innerHTML = '<div class="empty">No skills match your search.</div>';
+                return;
+            }
+
+            const groups = {};
+            filtered.forEach((item) => {
+                const g = item.group || 'Other';
+                if (!groups[g]) groups[g] = [];
+                groups[g].push(item);
+            });
+
+            skillsGrid.innerHTML = Object.entries(groups).map(([group, items]) => {
+                const cards = items.map((item) => {
+                    const summary = getShortDescription(item.description);
+                    const usageHints = getUsageHints(item.description);
+                    return `
+                    <article class="card" onclick="this.classList.toggle('expanded')">
+                        <h3>${item.name}</h3>
+                        <p class="card-summary">${summary}</p>
+                        <span class="cmd">${item.command}</span>
+                        <div class="card-detail">
+                            <p>${item.description}</p>
+                            ${usageHints ? `<p class="usage-label">When to use</p><div class="usage-example">${usageHints}</div>` : ''}
+                        </div>
+                    </article>
+                `;
+                }).join('');
+                return `
+                    <div class="skill-group">
+                        <h2 class="group-heading">${group}</h2>
+                        <div class="skills-grid">${cards}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getShortDescription(desc) {
+            const first = desc.split('. ')[0];
+            return first.length > 80 ? first.slice(0, 80) + '...' : first + '.';
+        }
+
+        function getUsageHints(desc) {
+            const match = desc.match(/Use when[^.]*\./i);
+            if (!match) return '';
+            const hints = match[0].replace(/^Use when (the )?user says /i, '').replace(/\.$/, '');
+            return hints;
+        }
+
+        function getModelTags(modelText) {
+            if (!modelText) return [];
+            const matches = modelText.match(/GPT-[0-9]+(?:\.[0-9]+)*(?:-Codex)?|Claude (?:Opus|Sonnet) [0-9]+(?:\.[0-9]+)*|Gemini [0-9]+(?:\.[0-9]+)* Pro/g) || [];
+            return Array.from(new Set(matches));
+        }
+
+        function renderProcessDetail() {
+            const activeIndex = pinnedProcessIndex ?? hoverProcessIndex;
+            if (activeIndex === null) {
+                processDetail.innerHTML = '<p class="meta">No stage selected yet. Hover or click any stage to reveal the details.</p>';
+                return;
+            }
+
+            const item = processes[activeIndex];
+            const rulesList = item.rules ? item.rules.map(r => `<li>${r}</li>`).join('') : '';
+            const contextList = item.context ? item.context.map(c => `<span class="context-item">${c}</span>`).join('') : '';
+            const modelTags = item.models || [];
+            const modelTagsHtml = modelTags.map(m => {
+                const cls = `model-tag${m.primary ? ' primary' : ''}`;
+                const tip = m.reason ? ` data-tip="${m.reason.replace(/"/g, '&quot;')}"` : '';
+                return `<span class="${cls}"${tip}>${m.name}</span>`;
+            }).join('');
+            const modelDetails = modelTagsHtml
+                ? `<div class="detail-section"><p class="detail-label">Preferred Model</p><div class="model-tags">${modelTagsHtml}</div></div>`
+                : '';
+            const rulesDetails = rulesList ? `<div class="detail-section"><p class="detail-label">Rules</p><ul>${rulesList}</ul></div>` : '';
+            const contextDetails = contextList ? `<div class="detail-section"><p class="detail-label">Context written</p><div>${contextList}</div></div>` : '';
+
+            processDetail.innerHTML = `
+                <h4>${item.step}</h4>
+                <span class="detail-skill">${item.skill}</span>
+                <p class="detail-desc">${item.details}</p>
+                <div class="detail-section">
+                    <p class="detail-label">Output</p>
+                    <p class="detail-desc">${item.output}</p>
+                </div>
+                ${item.session ? `<div class="detail-section"><p class="detail-label">Session Strategy</p><p class="detail-desc">${item.session}</p></div>` : ''}
+                ${modelDetails}
+                ${rulesDetails}
+                ${contextDetails}
+                <span class="gate ${item.level}">${item.gate}</span>
+            `;
+        }
+
+        function updateProcessStageStates() {
+            const stages = processFlow.querySelectorAll('.step');
+            stages.forEach((stage, index) => {
+                const isPinned = pinnedProcessIndex === index;
+                const isHovered = pinnedProcessIndex === null && hoverProcessIndex === index;
+                stage.classList.toggle('active', isPinned || isHovered);
+                stage.setAttribute('aria-pressed', String(isPinned));
+            });
+        }
+
+        function renderProcessStages() {
+            processFlow.innerHTML = processes.map((item, index) => {
+                return `
+                    <button type="button" class="step" data-index="${index}" aria-pressed="false" title="${item.step}">
+                        <b>${item.step}</b>
+                        <span>${item.output}</span>
+                    </button>
+                `;
+            }).join('');
+
+            processFlow.querySelectorAll('.step').forEach((stage) => {
+                stage.addEventListener('mouseenter', () => {
+                    if (pinnedProcessIndex !== null) {
+                        return;
+                    }
+                    hoverProcessIndex = Number(stage.dataset.index);
+                    updateProcessStageStates();
+                    renderProcessDetail();
+                });
+
+                stage.addEventListener('mouseleave', () => {
+                    if (pinnedProcessIndex !== null) {
+                        return;
+                    }
+                    hoverProcessIndex = null;
+                    updateProcessStageStates();
+                    renderProcessDetail();
+                });
+
+                stage.addEventListener('focus', () => {
+                    if (pinnedProcessIndex !== null) {
+                        return;
+                    }
+                    hoverProcessIndex = Number(stage.dataset.index);
+                    updateProcessStageStates();
+                    renderProcessDetail();
+                });
+
+                stage.addEventListener('blur', () => {
+                    if (pinnedProcessIndex !== null) {
+                        return;
+                    }
+                    hoverProcessIndex = null;
+                    updateProcessStageStates();
+                    renderProcessDetail();
+                });
+
+                stage.addEventListener('click', () => {
+                    const selectedIndex = Number(stage.dataset.index);
+                    pinnedProcessIndex = pinnedProcessIndex === selectedIndex ? null : selectedIndex;
+                    hoverProcessIndex = pinnedProcessIndex === null ? selectedIndex : null;
+                    updateProcessStageStates();
+                    renderProcessDetail();
+                });
+            });
+
+            processCount.textContent = `${processes.length} workflow stages`;
+            renderProcessDetail();
+            updateProcessStageStates();
+        }
+
+        function setupTabs() {
+            const buttons = document.querySelectorAll('.tab-btn');
+            const panels = document.querySelectorAll('.panel');
+
+            buttons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    buttons.forEach((b) => {
+                        b.classList.remove('active');
+                        b.setAttribute('aria-selected', 'false');
+                    });
+                    panels.forEach((panel) => panel.classList.remove('active'));
+
+                    button.classList.add('active');
+                    button.setAttribute('aria-selected', 'true');
+                    document.getElementById(button.dataset.target).classList.add('active');
+                });
+            });
+        }
+
+        skillSearch.addEventListener('input', (e) => renderSkills(e.target.value));
+
+        function copyInstall() {
+            const text = `git config --global credential.useHttpPath true; $y="$env:USERPROFILE\\.yaaw"; if (Get-Command yaaw -ErrorAction SilentlyContinue) { yaaw help } elseif (Test-Path "$y\\install.ps1") { & "$y\\install.ps1" } elseif (Test-Path $y) { throw "$y already exists but is not a yaaw-skills checkout. Rename or remove it, then run setup again." } else { git clone https://github.com/koshikg/yaaw.git $y; if ($LASTEXITCODE -ne 0) { throw "git clone failed" }; & "$y\\install.ps1" }`;
+            const btn = document.querySelector('#install-footer button');
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3.5 8.5 6 11 12.5 4.5"/></svg> Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M5 11H3.5A1.5 1.5 0 0 1 2 9.5v-7A1.5 1.5 0 0 1 3.5 1h7A1.5 1.5 0 0 1 12 2.5V5"/></svg> Setup Script';
+                btn.classList.remove('copied');
+            }, 2000);
+            navigator.clipboard.writeText(text);
+        }
+
+        setupTabs();
+        renderFilterBar();
+        renderSkills();
+        renderProcessStages();
+    </script>
+</body>
+</html>

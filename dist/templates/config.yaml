@@ -1,0 +1,41 @@
+# Repo Configuration
+# Fill this in with your repo's details. Skills read this to adapt behavior.
+# Update this file when the system changes.
+
+project:
+  name: ""
+  repo-name: ""
+  framework: ""
+  solution: ""
+
+pipelines: []
+# Example:
+# pipelines:
+#   location: ".github/workflows/"
+#   list:
+#     - file: "ci-build.yaml"
+#       display_name: "Main Build"
+
+deployables: []
+# Example:
+# deployables:
+#   - name: "MyService"
+#     type: "Windows Service"
+#     pipeline: "ci-build.yaml"
+
+tech_stack: {}
+# Example:
+# tech_stack:
+#   server: "ASP.NET Web API"
+#   data: "Entity Framework"
+#   testing: "xUnit"
+
+conventions:
+  commits: "Conventional commits — feat|fix|refactor|chore|docs|test|ci|style"
+  branching: "feature branches from main"
+  file_paths: "Always repo-relative, never absolute"
+  caveman_default: false  # set true to enable caveman mode by default
+
+# Parent folder containing related repos (set during yaaw init)
+# The agent discovers sibling repos dynamically from this path.
+# yaaw_workspace_root: "C:\workspaces\YAAW"

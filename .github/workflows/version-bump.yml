@@ -1,0 +1,56 @@
+name: YAAW Version Bump
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - dist/**
+      - commands/**
+      - '*.ps1'
+      - .github/workflows/version-bump.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  version-bump:
+    name: Bump version
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump patch version
+        shell: pwsh
+        run: |
+          $commitMsg = git log -1 --pretty=%s
+          if ($commitMsg -match '\[skip ci\]') {
+            Write-Host 'Skipping version bump commit.'
+            return
+          }
+
+          $versionFile = 'version.json'
+          $json = Get-Content $versionFile | ConvertFrom-Json
+          $parts = $json.version -split '\.'
+          $parts[2] = [int]$parts[2] + 1
+          $json.version = $parts -join '.'
+          $json.date = Get-Date -Format 'yyyy-MM-dd'
+          $json | ConvertTo-Json | Set-Content $versionFile
+
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git config user.name 'github-actions[bot]'
+          git add version.json
+          git commit -m "chore: bump version to $($json.version) [skip ci]"
+          git tag "v$($json.version)"
+          git push origin HEAD:main --tags
+
+          Write-Host "Version bumped to $($json.version)"

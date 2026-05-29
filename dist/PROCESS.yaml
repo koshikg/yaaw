@@ -1,0 +1,413 @@
+# YAAW
+# Defines the phase flow, gates, and rules for all agent work.
+# Agent MUST read this file and enforce all gates.
+
+process:
+  name: YAAW
+  version: 1.0
+  principle: "No phase proceeds without human approval. No work ships without build verification."
+
+# ─────────────────────────────────────────────
+# PHASES (ordered)
+# ─────────────────────────────────────────────
+
+phases:
+
+  # ── DISCOVERY ──────────────────────────────
+  discovery:
+    skill: yaaw-discover
+    trigger: anytime (no prerequisites)
+    purpose: Investigate the codebase, map dependencies, trace behavior
+    copilot:
+      session_policy: "Fresh session required. Stop after findings and handoff are written."
+      default_model: "GPT-5.5 — primary for deep reasoning and synthesis. Alternatives: Claude Opus 4.6, Gemini 2.5 Pro, Gemini 3.1 Pro"
+      handoff:
+        - context/discovery/NN-topic/findings.md
+        - Short next-step summary + ready-to-paste /yaaw-plan prompt when implementation should follow
+    outputs:
+      - context/discovery/NN-topic/findings.md
+      - context/learnings/ (if new knowledge found)
+    gate_to_next: none (discovery is standalone)
+    rules:
+      - Any new finding not already in learnings → update context/learnings/
+      - Update context/learnings/_index.yaml after every new learning
+      - Human approval required before closing discovery
+      - "NEVER create implementation artifacts (scripts, configs, CSVs, code files) during discovery. Discovery outputs ONLY to context/discovery/ and context/learnings/."
+      - "If the user's request spans discovery + implementation, complete discovery first, present findings, then route to /yaaw-plan."
+
+  # ── PLAN ───────────────────────────────────
+  plan:
+    skill: yaaw-plan
+    trigger: anytime (no prerequisites, but benefits from prior discovery)
+    purpose: Produce a PRD (Plan/Requirements Document) with clear objectives and references
+    copilot:
+      session_policy: "Fresh session required. Read discovery outputs only, then stop after plan approval handoff."
+      default_model: "GPT-5.5 — primary for structured reasoning and planning. Alternatives: Claude Opus 4.6, Claude Opus 4.5, Gemini 2.5 Pro, Gemini 3.1 Pro"
+      handoff:
+        - context/plans/NN-type-name/plan.md
+        - Ready-to-paste /yaaw-work prompt that references the approved plan path
+    sub_skills:
+      - yaaw-grillme (requirements elicitation — interview user until shared understanding)
+    outputs:
+      - context/plans/NN-type-name/plan.md (the PRD)
+    gate_to_next:
+      name: plan-approval-gate
+      conditions:
+        - PRD document exists in context/plans/
+        - PRD has mandatory "References" section linking to context/learnings/
+        - PRD has clear "Objective" and "Success Criteria" sections
+        - User explicitly approves the PRD ("approved", "looks good", "proceed")
+      enforcement: |
+        Agent MUST present the completed PRD to the user and ask:
+        "Do you approve this plan? (yes/no)"
+        Do NOT proceed to yaaw-work until user confirms.
+    rules:
+      - Use yaaw-grillme to elicit requirements (one question at a time)
+      - Reference context/learnings/ for implementation guidance
+      - Reference context/discovery/ for system understanding
+      - Human approval is the ONLY way to pass this gate
+
+  # ── WORK ───────────────────────────────────
+  work:
+    skill: yaaw-work
+    trigger: only after plan-approval-gate is satisfied
+    purpose: Implement the approved PRD
+    copilot:
+      session_policy: "Fresh session required to start work. Later fresh sessions may resume the same work item from context/work logs."
+      default_model: "GPT-5.3-Codex — primary for code editing. Alternatives: GPT-5.2-Codex, GPT-5.4, Claude Sonnet 4.6"
+      handoff:
+        - context/work/NN-work-title/session.md
+        - context/work/NN-work-title/yaaw-work-log.md
+        - Build/test evidence + ready-to-paste /yaaw-review prompt
+    prerequisites:
+      - Approved PRD document (plan-approval-gate passed)
+      - PRD path must be confirmed by user
+      - PRD validated (units defined, references exist, dependencies sequenced)
+    sub_skills:
+      - yaaw-build (mandatory verification after each implementation unit)
+    outputs:
+      - Code changes (committed to feature branch)
+      - context/work/NN-work-title/ (session.md + yaaw-work-log.md)
+      - context/learnings/ (if new knowledge found during implementation)
+    gate_before_code_changes:
+      name: branch-gate
+      conditions:
+        - Current branch is NOT main, develop, or release/*
+        - Branch follows naming convention after stripping prefix (feature/, bugfix/, hotfix/)
+        - Name starts with valid ID: 5-digit (12345-), PRB1234567-, INCD1234567-, or DMND1234567-
+      enforcement: |
+        Agent MUST check current branch BEFORE modifying any code file.
+        If on main, develop, or release/* -> STOP. Do NOT touch any code.
+        If branch name is invalid or missing, prompt the user for:
+          1. Work item / Problem / Incident / Demand ID
+          2. Short description for the branch name
+          3. Base branch to create from
+        Then create and checkout the branch:
+          git checkout -b feature/<id>-<description>
+        Only after a valid branch is checked out may the agent modify code.
+    gate_to_start:
+      name: work-plan-validation-gate
+      conditions:
+        - "Plan has status: approved + approved_by: user"
+        - Plan has clear Implementation Units with Goals, Files, Approach, Verification
+        - Plan has References section linking to context/learnings/ and context/discovery/
+        - Unit dependencies are explicitly stated and correctly sequenced
+        - Success Criteria are measurable
+      enforcement: |
+        Agent MUST validate the plan document before starting.
+        If any condition fails, STOP and provide user with:
+        1. A list of specific issues found
+        2. A ready-to-paste prompt for /yaaw-plan that describes exactly what to fix
+        Do NOT proceed until the plan passes all gates.
+
+    gate_to_complete:
+      name: build-verification-gate
+      conditions:
+        - yaaw-build passes for all affected pipelines
+        - All test cases pass
+        - For UI changes: human visual approval required
+        - All PRD Success Criteria verified
+      enforcement: |
+        Agent CANNOT mark any unit complete until yaaw-build passes.
+        Agent CANNOT mark work as done until ALL units pass build-verification-gate.
+        For UI changes: present screenshots/description and ask user to verify.
+    rules:
+      - "TDD is non-negotiable: write/identify tests BEFORE writing any implementation code. No code without a failing test first."
+      - Always check for in-progress work sessions before starting new work
+      - Ask user which base branch to use — do not assume
+      - Follow PRD implementation units in dependency order
+      - Track all tasks in context/work/NN-*/yaaw-work-log.md
+      - Small commits only — each commit must be testable in isolation
+      - Human approval required before every commit
+      - Run yaaw-build after each unit (not at the end)
+      - Any unexpected finding → capture in context/learnings/ immediately
+
+  # ── REVIEW ─────────────────────────────────
+  review:
+    skill: yaaw-review
+    trigger: after work is complete
+    purpose: Self-review before pushing
+    copilot:
+      session_policy: "Fresh session required. Load plan, diff, work summary, and build evidence only."
+      default_model: "Claude Opus 4.6 — primary for methodical code review. Alternatives: GPT-5.5, Claude Opus 4.5, Gemini 2.5 Pro"
+      handoff:
+        - Review summary with findings, residual risks, and approval/block status
+        - Ready-to-paste /yaaw-commit prompt when all blockers are cleared
+    prerequisites:
+      - build-verification-gate passed
+    gate_to_next:
+      name: review-approval-gate
+      conditions:
+        - Agent self-review complete
+        - User approves the review ("push it", "looks good")
+      enforcement: |
+        Present review summary. Wait for user approval before commit/push.
+
+  # ── COMMIT ─────────────────────────────────
+  commit:
+    skill: yaaw-commit
+    trigger: after review-approval-gate
+    purpose: Create conventional commit and push
+    copilot:
+      session_policy: "Fresh minimal session required. Load only commit readiness evidence."
+      default_model: "GPT-5.3-Codex — primary for commit gate checks. Alternatives: GPT-5.4, Claude Sonnet 4.6, Claude Sonnet 4.5"
+      handoff:
+        - Commit message + proof of passed gates
+    prerequisites:
+      - yaaw-work phase completed
+      - build-verification-gate passed (yaaw-build passes for all affected pipelines)
+      - All tests pass (TDD verified — tests written before code, confirmed failing, then passing)
+      - review-approval-gate passed
+    gate_to_commit:
+      name: commit-gate
+      conditions:
+        - yaaw-work phase is complete (all implementation units done)
+        - yaaw-build passed for all affected pipelines
+        - All tests pass (automated or manual verification documented)
+        - TDD workflow was followed (tests existed before implementation)
+        - Agent self-review complete (review-approval-gate passed)
+        - User explicitly approves the commit
+      enforcement: |
+        Agent CANNOT commit unless ALL of the following are proven:
+        1. Work phase is complete — all PRD units implemented
+        2. Build passes — yaaw-build ran successfully for all affected pipelines
+        3. Tests pass — evidence of test-first workflow (test failed → code written → test passed)
+        4. Review done — self-review presented and user approved
+        5. User approval — explicit "commit it" / "go ahead" from user
+        If ANY prerequisite is missing, REFUSE and tell user what's still needed.
+        No big bang commits — small, focused, testable commits only.
+
+# ─────────────────────────────────────────────
+# CROSS-CUTTING RULES
+# ─────────────────────────────────────────────
+
+cross_cutting:
+
+  human_in_the_loop:
+    rule: "Agent NEVER proceeds to the next phase without explicit human approval."
+    enforcement: |
+      At every phase boundary, agent must:
+      1. Present the phase output/summary
+      2. Ask for approval to proceed
+      3. Wait for explicit confirmation
+      Silence or ambiguity = do NOT proceed. Ask again.
+
+  knowledge_capture:
+    rule: "Any new learning in ANY phase must be persisted to context/learnings/."
+    enforcement: |
+      After every phase completion, agent checks:
+      - Did I discover something new? → write to context/learnings/<segment>/
+      - Update context/learnings/_index.yaml
+      This applies to discovery, plan, work, review — all phases.
+
+  session_continuity:
+    rule: "Update context/_session.md at every phase transition."
+    enforcement: |
+      - Mark current phase status (in-progress / complete)
+      - Log which gate was passed and when
+      - Leave breadcrumbs for next session
+
+  phase_scoped_sessions:
+    rule: "Each core workflow phase starts in a fresh session when the client supports it."
+    enforcement: |
+      At discovery→plan, plan→work, work→review, and review→commit boundaries:
+      1. Finish the current phase artifact(s)
+      2. Update context/_session.md
+      3. Stop the current session
+      4. Start the next phase in a NEW session
+      If the client cannot auto-open a new session:
+      - Do NOT silently continue into the next phase
+      - Emit a ready-to-paste starter prompt for the next phase
+      - Wait for the user to continue there
+      Work may span multiple sessions, but every resume must stay anchored to the same approved plan and context/work/ logs.
+
+  model_routing:
+    rule: "Prefer a phase/skill model pool instead of a single fixed model."
+    enforcement: |
+      Core workflow model pool:
+      - Discover / Plan → Primary: GPT-5.5 (heavy reasoning)
+        Alternatives: Claude Opus 4.6, Claude Opus 4.5, Gemini 2.5 Pro, Gemini 3.1 Pro
+      - Work → Primary: GPT-5.3-Codex (code editing)
+        Alternatives: GPT-5.2-Codex, GPT-5.4, Claude Sonnet 4.6
+      - Review → Primary: Claude Opus 4.6 (methodical code review)
+        Alternatives: GPT-5.5, Claude Opus 4.5, Gemini 2.5 Pro
+      - Commit → Primary: GPT-5.3-Codex (gate check + commit format)
+        Alternatives: GPT-5.4, Claude Sonnet 4.6, Claude Sonnet 4.5
+
+      Utility skill model fit:
+      - yaaw-build / yaaw-pipeline / yaaw-devops / yaaw-crossrepo → codex-first models (GPT-5.3-Codex, GPT-5.2-Codex)
+      - yaaw-security / yaaw-techdebt / yaaw-grillme → deep-reasoning models (Claude Opus 4.6, GPT-5.5, Claude Opus 4.5)
+      - yaaw-capture / yaaw-release / yaaw-doctor / yaaw-caveman → fast lower-cost models are acceptable unless complexity spikes
+
+      - If only one model is available, use it and continue. This is an optimization, not a gate.
+
+  caveman_by_default:
+    rule: "Agent MUST use caveman mode for ALL responses by default."
+    enforcement: |
+      Every response follows yaaw-caveman rules:
+      - One sentence max per thought. Target 50-70% fewer tokens than normal.
+      - Bullets, short code blocks, tables. No prose paragraphs.
+      - Drop articles, filler, pleasantries, hedging.
+      - Short 3-6 word sentences. Abbreviate: DB/auth/config/req/res/fn/impl/pkg/dep/env.
+      - Pattern: [thing] [action] [reason]. [next step].
+      - Code output stays standard (readable, well-formatted). Only chat is terse.
+      Exceptions (temporarily expand for clarity):
+      - Security warnings
+      - Irreversible action confirmations
+      - Multi-step sequences where fragments risk misread
+      - User explicitly asks for explanation
+      Resume caveman immediately after exception.
+
+  no_skip:
+    rule: "Gates cannot be bypassed. No exceptions."
+    enforcement: |
+      - yaaw-work CANNOT start without an approved PRD
+      - yaaw-work CANNOT complete without yaaw-build passing
+      - yaaw-commit CANNOT run without yaaw-work complete + build passing + tests passing (TDD)
+      - No phase transition without human approval
+      - If user asks to skip a gate, explain why it exists and refuse
+
+  discovery_is_read_only:
+    rule: "Discovery phase MUST NOT produce any file outside context/discovery/ and context/learnings/."
+    enforcement: |
+      Before writing ANY file during discovery, agent checks:
+      - Is the target path under context/discovery/ or context/learnings/? → OK
+      - Is it context/_session.md? → OK
+      - Anything else? → REFUSE. Log what you wanted to create, present it as a recommendation in findings, route to /yaaw-plan.
+
+  test_driven_development:
+    rule: "Agent MUST write or identify tests BEFORE writing implementation code for any new functionality."
+    enforcement: |
+      For every new code change (feature, fix, refactor):
+      1. Write the failing test first (or identify existing test to extend)
+      2. Confirm the test fails (proves it's testing the right thing)
+      3. Write the minimal implementation to make it pass
+      4. Confirm the test passes
+      5. Present test + implementation to user for approval
+      If unit tests are not applicable (scripts, infra, config):
+      1. Define a manual verification procedure BEFORE implementing
+      2. Document expected inputs and outputs
+      3. Implement the change
+      4. Execute the verification procedure and present evidence
+      Agent CANNOT skip test-first. If user asks to skip, explain TDD is a non-negotiable gate.
+      Exception: context-only changes (docs, learnings, session files) do not require tests.
+
+  branch_before_code:
+    rule: "Agent MUST be on a valid feature/bugfix/hotfix branch before modifying ANY code file in ANY phase."
+    enforcement: |
+      Before ANY code file modification, agent must:
+      1. Run: git branch --show-current
+      2. If on main, develop, or release/* -> REFUSE to modify code
+      3. Validate branch name against branch_naming rules (below)
+      4. If branch is invalid or missing, prompt user for:
+         - Work item / Problem / Incident / Demand ID
+         - Short branch description
+         - Base branch to branch from
+      5. Create and checkout the branch, then proceed
+      This applies to ALL phases — not just yaaw-work.
+
+  changelog_on_commit:
+    rule: "When working in the yaaw-skills repo, every feature/fix/change commit MUST include a CHANGELOG.md update under [Unreleased]."
+    enforcement: |
+      Before committing in yaaw-skills:
+      1. Check if the commit adds/changes/removes functionality
+      2. If yes → add entry to CHANGELOG.md under [Unreleased] in the appropriate section (Added/Changed/Fixed/Removed)
+      3. Context-only commits (session, learnings) are exempt
+      Format: `- **Short description** — details`
+
+# ─────────────────────────────────────────────
+# BRANCH NAMING (single source of truth)
+# ─────────────────────────────────────────────
+
+branch_naming:
+  format: "<prefix>/<id>-<description>"
+  prefixes: ["feature/", "bugfix/", "hotfix/"]
+  prefix_optional: true
+  protected_branches: ["main", "develop", "release/*"]
+  id_patterns:
+    - pattern: "^\\d{5}-"
+      description: "5-digit issue or work item ID (e.g., 12345-)"
+    - pattern: "^PRB\\d{7}-"
+      description: "Problem record (e.g., PRB1234567-)"
+    - pattern: "^INCD\\d{7}-"
+      description: "Incident record (e.g., INCD1234567-)"
+    - pattern: "^DMND\\d{7}-"
+      description: "Demand record (e.g., DMND1234567-)"
+  examples_valid:
+    - "feature/12345-ore-tracking-updates"
+    - "bugfix/PRB1234567-fix-connection-timeout"
+    - "hotfix/INCD1234567-resolve-prod-crash"
+    - "12345-direct-branch-no-prefix"
+  examples_invalid:
+    - "feature/ore-tracking-updates (missing ID)"
+    - "my-branch (no ID prefix)"
+    - "feature/abc-123-something (ID must be numeric pattern)"
+
+# ─────────────────────────────────────────────
+# UTILITY SKILLS (no phase dependency)
+# ─────────────────────────────────────────────
+
+utility_skills:
+  - skill: yaaw-capture
+    trigger: anytime
+    purpose: Record a learning or decision to context/learnings/
+
+  - skill: yaaw-caveman
+    trigger: anytime
+    purpose: Compressed communication mode (persists until disabled)
+
+  - skill: yaaw-grillme
+    trigger: anytime (also invoked by yaaw-plan)
+    purpose: Stress-test a plan or design via relentless interviewing
+
+  - skill: yaaw-security
+    trigger: anytime (recommended before commit, can also be invoked standalone)
+    purpose: Audit code for security vulnerabilities — secrets, SQL injection, insecure deserialization, vulnerable dependencies, WPF-specific risks
+
+  - skill: yaaw-techdebt
+    trigger: anytime
+    purpose: Analyze and prioritize technical debt — produces structured remediation plans with severity/impact/effort scoring
+
+  - skill: yaaw-pipeline
+    trigger: anytime (when working on .github/workflows/ files or CI/CD)
+    purpose: Author, modify, and troubleshoot GitHub Actions workflows and CI/CD pipelines
+
+  - skill: yaaw-crossrepo
+    trigger: anytime (when changes span multiple YAAW repos)
+    purpose: Coordinate cross-repo changes — NuGet version bumps, pipeline template updates, synchronized deployments
+
+  - skill: yaaw-release
+    trigger: anytime (when preparing PRs or release notes)
+    purpose: Generate release notes, changelogs, and PR descriptions from conventional commits
+
+  - skill: yaaw-doctor
+    trigger: anytime (when setup seems broken or user asks for diagnostics)
+    purpose: Diagnose YAAW agentic setup health — config, workspace root, sibling repos, session state
+
+  - skill: yaaw-devops
+    trigger: anytime (when interacting with DevOps resources via CLI)
+    purpose: Manage DevOps resources — pull requests, work items, builds, artifacts, releases, and workflow metadata
+
+  - skill: yaaw-stack-constraints
+    trigger: always active (passive skill — agent reads before writing any code)
+    purpose: Enforce the repository's declared stack, tooling, package manager, and conventions
