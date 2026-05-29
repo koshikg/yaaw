@@ -1,0 +1,16 @@
+{
+  "name": "yaaw-skills-overview-tests",
+  "version": "1.0.0",
+  "description": "Tests for YAAW Skills overview",
+  "scripts": {
+    "skills:sync": "node showcase/scripts/generate-skills-data.mjs",
+    "skills:watch": "node showcase/scripts/generate-skills-data.mjs --watch",
+    "pretest": "npm run skills:sync",
+    "test": "playwright test testing/e2e --output testing/test-results",
+    "test:headed": "playwright test testing/e2e --headed --output testing/test-results",
+    "test:ui": "playwright test testing/e2e --ui --output testing/test-results"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}
